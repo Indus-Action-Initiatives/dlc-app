@@ -51,6 +51,12 @@ Route::post('/config/save', [ConfigController::class, 'saveConfig']);
 
 Route::get('/get-all-skill', [SkillController::class, 'index']);
 
+// OTP — public (used for registration and forgot-password flows, no auth required)
+Route::prefix('otp')->group(function () {
+    Route::post('/send',   [OtpController::class, 'send']);
+    Route::post('/verify', [OtpController::class, 'verify']);
+});
+
 Route::prefix('schemes')->group(function () {
     Route::post('/create', [SchemesPageController::class, 'store']);
     Route::get('/list', [SchemesPageController::class, 'index']);
@@ -140,10 +146,6 @@ Route::middleware(['auth:employer'])->group(function () {
     });
   });
 
-  Route::prefix('otp')->group(function () {
-    Route::post('/send',   [OtpController::class, 'send']);
-    Route::post('/verify', [OtpController::class, 'verify']);
-  });
 
 });
 
