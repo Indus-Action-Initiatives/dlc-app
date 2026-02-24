@@ -143,6 +143,8 @@ Route::middleware(['auth:employer'])->group(function () {
   Route::prefix('otp')->group(function () {
     Route::post('/send',   [OtpController::class, 'send']);
     Route::post('/verify', [OtpController::class, 'verify']);
+  });
+
 });
 
 
