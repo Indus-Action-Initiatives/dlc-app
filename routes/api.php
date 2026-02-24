@@ -30,6 +30,7 @@ use App\Http\Controllers\WorkerProfileController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\EmployerJobpostController;
 use App\Http\Controllers\EmployerProfileController;
+use App\Http\Controllers\OtpController;
 
 
 
@@ -139,6 +140,9 @@ Route::middleware(['auth:employer'])->group(function () {
     });
   });
 
+  Route::prefix('otp')->group(function () {
+    Route::post('/send',   [OtpController::class, 'send']);
+    Route::post('/verify', [OtpController::class, 'verify']);
 });
 
 
