@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
     //baseURL: "https://apps.labour.gov.in/labourchowk/api/public/api/", // 🌐 your backend base URL
     // baseURL: "http://13.235.48.250/api/", // 🌐 DocumentRoot is /var/www/dlc-app/public — app served at server root
-    baseURL: "https://dlc-app-api.indusaction.org/",
+    baseURL: "https://dlc-app-api.indusaction.org/api/",
     timeout: 10000, // 10 sec timeout
 });
 
