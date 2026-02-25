@@ -1,0 +1,51 @@
+:root {
+    --v-layout-top: 0px !important;
+}
+
+.v-main {
+    padding-top: 0 !important;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom)) !important;
+}
+
+.v-bottom-navigation {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(56px + env(safe-area-inset-bottom)) !important;
+}
+
+.v-app-bar {
+    padding-top: env(safe-area-inset-top) !important;
+
+}
+
+.v-toolbar__content {
+    overflow: visible !important;
+}
+
+.v-container {
+    /* padding-bottom: 50px !important; */
+}
+
+/* 🧭 Force the Bhashini dropdown to stay in a safe corner */
+/* .bhashini-plugin-container {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    /* 👈 you can change to right: 20px if you prefer */
+/* z-index: 99999 !important;
+} */
+
+
+
+/* 🧱 Make sure dropdown doesn’t overflow or block UI */
+.bhashini-dropdown-content {
+    display: block;
+    inset: 100% 0px auto auto !important;
+}
+
+/* Optional: reduce size or hide logo if overlapping */
+/* .bhashini-branding img {
+    max-height: 20px;
+} */

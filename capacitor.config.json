@@ -1,0 +1,12 @@
+{
+  "appId": "com.labourchowk.app",
+  "appName": "labourchowk",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["13.235.48.250"] 
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
