@@ -31,7 +31,7 @@ use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\EmployerJobpostController;
 use App\Http\Controllers\EmployerProfileController;
 use App\Http\Controllers\OtpController;
-
+use App\Http\Controllers\NotificationController;
 
 
 Route::post('/worker/register', [WorkerController::class, 'register']);
@@ -74,6 +74,9 @@ Route::prefix('facilities')->group(function () {
     Route::put('/update-facility/{id}', [FacilityController::class, 'update']);
     Route::delete('/facility/{id}', [FacilityController::class, 'destroy']);
 });
+
+//  FCM Notification Token Route (Public)
+Route::post('/save-token', [NotificationController::class, 'saveToken']);
 
 //-----------------------------------------------------------------------------------------------
 //worker apis
