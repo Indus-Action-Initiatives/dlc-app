@@ -11,6 +11,6 @@ class UserDevice extends Model
         'device_id',
         'fcm_token',
         'user_type',
-        'current_user',
+        'user_id',
     ];
 }

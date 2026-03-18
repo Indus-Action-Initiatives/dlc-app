@@ -12,11 +12,13 @@ return new class extends Migration
         if (!Schema::hasTable('user_devices')) {
             Schema::create('user_devices', function (Blueprint $table) {
                 $table->id();
-                $table->string('device_id')->unique();
+                $table->string('device_id');
                 $table->text('fcm_token');
                 $table->string('user_type')->nullable();
-                $table->string('current_user')->nullable();
+                $table->string('user_id')->nullable();
                 $table->timestamps();
+        
+                $table->unique(['device_id', 'user_id']);
             });
         }
     }

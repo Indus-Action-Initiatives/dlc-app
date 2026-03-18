@@ -72,3 +72,6 @@ yarn-error.log*
 *.sql
 *.MD
 *.md
+
+# Firebase credentials
+firebase_credentials.json

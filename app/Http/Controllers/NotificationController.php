@@ -22,14 +22,15 @@ class NotificationController extends Controller
             // 2. Sync with the Postgres database
             // This silently updates the token if the device exists, or creates it if it's new.
             UserDevice::updateOrCreate(
-                ['device_id' => $request->deviceId],
                 [
-                    'fcm_token'    => $request->fcmToken,
-                    'user_type'    => $request->userType,
-                    'current_user' => $request->currentUser,
+                    'device_id'   => $request->deviceId,
+                    'user_id'=> $request->currentUser, // 👈 add this
+                ],
+                [
+                    'fcm_token' => $request->fcmToken,
+                    'user_type' => $request->userType,
                 ]
             );
-
             Log::info("Device sync successful for: " . $request->deviceId);
 
             return response()->json([
