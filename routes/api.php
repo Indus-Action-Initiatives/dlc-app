@@ -77,6 +77,8 @@ Route::prefix('facilities')->group(function () {
 
 //  FCM Notification Token Route (Public)
 Route::post('/save-token', [NotificationController::class, 'saveToken']);
+// Send push notification
+Route::post('/send-chat-push-notification', [NotificationController::class, 'sendPushNotificationForChat']);
 
 //-----------------------------------------------------------------------------------------------
 //worker apis

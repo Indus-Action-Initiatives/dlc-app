@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\UserDevice; 
+use App\Services\NotificationService;
 
 class NotificationController extends Controller
 {
@@ -46,4 +47,26 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+
+    public function sendPushNotificationForChat(Request $request)
+    {
+        $request->validate([
+            'text' => 'required|string',
+            'receiverId' => 'required|string',
+            'threadId' => 'nullable|string',
+        ]);
+
+        app(NotificationService::class)->send(
+            [(string) $request->receiverId],
+            "New message",
+            (string) $request->text,
+            [
+                "type" => "chat",
+                "thread_id" => (string) $request->threadId,
+            ]
+        );
+        return response()->json(['success' => true, 'message' => 'Push notification sent successfully']);
+    }
+
 }

@@ -85,10 +85,13 @@ class EmployerController extends Controller
         // Generate JWT token
         $token = JWTAuth::fromUser($worker);
 
+        $profile = $worker->profile()->first();
+
         return response()->json([
             'message' => 'Employer Login successful',
             'employer' => $worker,
-            'token' => $token
+            'token' => $token,
+            'profile' => $profile
         ]);
     }
 
