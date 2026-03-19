@@ -74,6 +74,3 @@ Thumbs.db
 # Misc
 *.local
 *.env.backup
-
-# Extra
-*.md
