@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use App\Models\{JobPost,JobPostFacility,Employer};
+use App\Models\Worker;
+use App\Services\NotificationService;
 
 class EmployerJobpostController extends Controller
 {
@@ -87,6 +89,8 @@ class EmployerJobpostController extends Controller
                 $jobPost->facilities()->sync($request->facilities);
             }
 
+            $this->afterJobCreate($jobPost);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Job Post Created Successfully!',
@@ -102,6 +106,37 @@ class EmployerJobpostController extends Controller
         }
     }
 
+    private function afterJobCreate(JobPost $jobPost): void
+    {
+        $this->sendJobNotification($jobPost);
+    }
+
+    private function sendJobNotification(JobPost $jobPost): void
+    {
+        $district = $jobPost->district;
+        if (! $district) {
+            return;
+        }
+
+        $workerIds = Worker::query()
+            ->whereHas('profile', fn ($q) => $q->where('district', $jobPost->district))
+            ->pluck('id')
+            ->all();
+        if ($workerIds === []) {
+            return;
+        }
+
+        $title = sprintf('New job posted in your district  %s', $district);
+        $body = sprintf(
+            'New job posted in your district %s. Open the app to view or apply.',
+            $district
+        );
+        $data = [
+            'type' => 'job',
+            'job_id' => $jobPost->id,
+        ];
+        app(NotificationService::class)->send($workerIds, $title, $body, $data);
+    }
 
     public function getJobsByEmployer($employer_id)
     {
