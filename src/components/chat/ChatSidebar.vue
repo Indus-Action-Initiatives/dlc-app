@@ -17,6 +17,6 @@
 <script setup>
 defineProps({
     chats: Array,
-    selectedChatId: [Number, null]
+    selectedChatId: [String, Number, null]
 });
 </script>

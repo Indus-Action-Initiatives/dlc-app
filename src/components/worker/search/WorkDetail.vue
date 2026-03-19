@@ -135,11 +135,19 @@ export default {
         },
 
         goToChat() {
-            alert("Upcoming ..")
-            // this.$router.push({
-            //     name: 'worker-chat',
-            //     params: { id: this.job.employerId }
-            // });
+            const employerId = this.job?.employer?.profile?.id;                
+            const employerName = this.job?.employer?.profile?.name;
+
+            if (!employerId || employerName) {
+                alert("Employer details not available for chat.");
+                return;
+            }
+
+            this.$router.push({
+                name: "worker-chat",
+                params: { id: employerId },
+                query: employerName ? { name: employerName } : {},
+            });
         },
         async getJob() {
             const id = this.$route.params.id;
