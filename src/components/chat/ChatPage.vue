@@ -9,16 +9,35 @@
         <!-- 64px for AppBar, 56px for bottom nav (adjust if different) -->
         <v-row style="height: 100%; overflow: hidden;">
             <!-- Sidebar -->
-            <v-col cols="4" class="chat-sidebar pa-2" style="border-right:1px solid #ddd; overflow-y: auto;">
+            <v-col cols="4" :class="['chat-sidebar', 'pa-2', 'chat-sidebar-col', { 'hide-on-mobile': !!activeChat }]"
+                style="border-right:1px solid #ddd; overflow-y: auto;">
                 <chat-sidebar :chats="chats" :selectedChatId="selectedChatId" @selectChat="openChat" />
             </v-col>
 
             <!-- Chat Window -->
-            <v-col cols="8" class="chat-window pa-2" style="display: flex; flex-direction: column; height: 100%;">
-                <chat-window v-if="activeChat" :chat="activeChat" :currentUser="currentUser" @sendMessage="sendMessage"
-                    :broadcastMode="broadcastMode" @sendBroadcast="sendBroadcast" />
+            <v-col cols="8" class="chat-window pa-0 chat-window-col"
+                style="display: flex; flex-direction: column; height: 100%;">
+                <template v-if="activeChat">
+                    <div class="chat-header">
+                        <v-toolbar density="compact" color="orange-lighten-5" flat>
+                            <v-btn variant="text" class="d-sm-none" @click="closeChatOnMobile">
+                                <v-icon>mdi-arrow-left</v-icon>
+                            </v-btn>
+                            <v-toolbar-title class="text-subtitle-1 font-weight-medium">
+                                {{ activeChat.name }}
+                            </v-toolbar-title>
+                            <v-spacer />
+                        </v-toolbar>
+                    </div>
+
+                    <div class="chat-body">
+                        <chat-window :chat="activeChat" :currentUser="currentUser" @sendMessage="sendMessage"
+                            :broadcastMode="broadcastMode" @sendBroadcast="sendBroadcast" />
+                    </div>
+                </template>
+
                 <div v-else class="text-center grey--text mt-5">
-                    Select User to start messaging
+                    No chat loaded.
                 </div>
             </v-col>
         </v-row>
@@ -27,41 +46,93 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import BackButtonAppBar from '@/components/header/BackButtonAppBar.vue';
 import ChatSidebar from '@/components/chat/ChatSidebar.vue';
 import ChatWindow from '@/components/chat/ChatWindow.vue';
 import { useRoute } from 'vue-router';
+import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
+import { db } from "@/services/firebase.js";
+import { ensureThread, makeThreadId, sendThreadMessage } from "@/services/chatService.js";
 
 const route = useRoute();
 
 const chatId = ref(route.params.id || null);
+const chatName = ref(route.query.name || null);
+const currentUser = ref(getCurrentUser());
+const currentUserKey = computed(() => `${currentUser.value.type}:${currentUser.value.id}`);
 
-const currentUser = ref({ id: 1, type: 'worker', name: 'Worker A' });
-
-const chats = ref([
-    { id: 1, name: 'Employer 1', lastMessage: 'Hello!', unread: 2, messages: [] },
-    { id: 2, name: 'Employer 2', lastMessage: 'Please apply', unread: 0, messages: [] },
-]);
+// Chat list should come from API. For now we only create/open the chat passed via route.
+const chats = ref([]);
 
 const selectedChatId = ref(null);
-const activeChat = computed(() => chats.value.find(c => c.id === selectedChatId.value));
+const activeChat = computed(() =>
+    chats.value.find(c => String(c.id) === String(selectedChatId.value))
+);
 const broadcastMode = ref(false);
+const activeThreadId = ref(null);
+let unsubscribeMessages = null;
+
+function getCurrentUser() {
+    try {
+        const raw = localStorage.getItem('labour_currentUser');
+        const userData = raw ? JSON.parse(raw) : null;
+        const worker = userData?.worker;
+        const employer = userData?.employer;
+
+        if (worker?.id) return { id: worker.id, type: 'worker', name: worker?.name || 'Worker' };
+        if (employer?.id) return { id: employer.id, type: 'employer', name: employer?.name || 'Employer' };
+    } catch (e) {
+        // ignore
+    }
+    return { id: 1, type: 'worker', name: 'Worker' };
+}
+
+function ensureChatExistsAndSelect(id, name) {
+    if (!id) return;
+    const normalizedId = String(id);
+
+    let existing = chats.value.find(c => String(c.id) === normalizedId);
+    if (!existing) {
+        existing = { id: normalizedId, name: name || 'Chat', lastMessage: '', unread: 0, messages: [] };
+        chats.value.unshift(existing);
+    } else if (name && existing.name !== name) {
+        existing.name = name;
+    }
+
+    openChat(normalizedId);
+}
 
 function openChat(chatId) {
     selectedChatId.value = chatId;
     broadcastMode.value = false;
 }
 
-function sendMessage(message) {
-    if (activeChat.value) {
-        activeChat.value.messages.push({
-            id: Date.now(),
+function closeChatOnMobile() {
+    selectedChatId.value = null;
+}
+
+async function sendMessage(message) {
+    if (!activeChat.value || !activeThreadId.value) return;
+
+    // optimistic UI
+    activeChat.value.messages.push({
+        id: `local_${Date.now()}`,
+        text: message,
+        senderId: currentUserKey.value,
+        timestamp: new Date().toISOString(),
+        pending: true,
+    });
+    activeChat.value.lastMessage = message;
+
+    try {
+        await sendThreadMessage({
+            threadId: activeThreadId.value,
             text: message,
-            senderId: currentUser.value.id,
-            timestamp: new Date().toISOString(),
+            senderId: currentUserKey.value,
         });
-        activeChat.value.lastMessage = message;
+    } catch (err) {
+        alert("Error !!\nFailed to send message.");
     }
 }
 
@@ -76,6 +147,72 @@ function sendBroadcast(message) {
         chat.lastMessage = message;
     });
 }
+
+watch(
+    () => [route.params.id, route.query.name],
+    ([newId, newName]) => {
+        chatId.value = newId || null;
+        chatName.value = newName || null;
+        ensureChatExistsAndSelect(chatId.value, chatName.value);
+    },
+    { immediate: true }
+);
+
+// If user lands on /chat without id, don't show the misleading "select user" state on mobile.
+// (Once chat list is wired to API, sidebar selection can be enabled again.)
+
+watch(
+    () => activeChat.value?.id,
+    async (otherUserId) => {
+        if (unsubscribeMessages) {
+            unsubscribeMessages();
+            unsubscribeMessages = null;
+        }
+        activeThreadId.value = null;
+
+        if (!otherUserId) return;
+
+        const otherUserKey = currentUser.value.type === "worker"
+            ? `employer:${otherUserId}`
+            : `worker:${otherUserId}`;
+
+        const threadId = makeThreadId(
+            currentUserKey.value, 
+            otherUserKey,
+        );
+        activeThreadId.value = threadId;
+
+        await ensureThread({
+            threadId,
+            participants: [currentUserKey.value, otherUserKey],
+            participantNames: {
+                [currentUserKey.value]: currentUser.value.name,
+                [otherUserKey]: activeChat.value?.name || "Chat",
+            },
+        });
+
+        const threadRef = doc(db, "threads", threadId);
+        const msgsQ = query(collection(threadRef, "messages"), orderBy("createdAt", "asc"));
+
+        unsubscribeMessages = onSnapshot(msgsQ, (snap) => {
+            const msgs = snap.docs.map(d => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    text: data.text || "",
+                    senderId: data.senderId,
+                    timestamp: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                };
+            });
+            if (activeChat.value) activeChat.value.messages = msgs;
+        });
+    },
+    { immediate: true }
+);
+
+onUnmounted(() => {
+    if (unsubscribeMessages) unsubscribeMessages();
+});
 </script>
 
 <style scoped>
@@ -97,8 +234,31 @@ function sendBroadcast(message) {
     /* make room for input field */
 }
 
+.chat-header {
+    border-bottom: 1px solid #eee;
+}
+
+.chat-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
 .v-main {
 
     padding-bottom: 0px !important;
+}
+
+/* PWA/mobile: hide sidebar when a chat is open */
+@media (max-width: 600px) {
+    .chat-sidebar-col { display: block; }
+    .chat-window-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .chat-sidebar-col.hide-on-mobile {
+        display: none;
+    }
 }
 </style>
