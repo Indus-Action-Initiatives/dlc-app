@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\{JobPost,JobPostFacility,Employer};
 use App\Models\Worker;
 use App\Services\NotificationService;
+use App\Models\District;
+use Illuminate\Support\Facades\Log;
 
 class EmployerJobpostController extends Controller
 {
@@ -117,19 +119,20 @@ class EmployerJobpostController extends Controller
         if (! $district) {
             return;
         }
+        $district_name = District::where('lgd_code', $district)->first()->district_name;
 
         $workerIds = Worker::query()
-            ->whereHas('profile', fn ($q) => $q->where('district', $jobPost->district))
+            ->whereHas('profile', fn ($q) => $q->where('district', $district))
             ->pluck('id')
             ->all();
         if ($workerIds === []) {
             return;
         }
 
-        $title = sprintf('New job posted in your district  %s', $district);
+        $title = sprintf('New job posted in your district  %s', $district_name);
         $body = sprintf(
             'New job posted in your district %s. Open the app to view or apply.',
-            $district
+            $district_name
         );
         $data = [
             'type' => 'job',
