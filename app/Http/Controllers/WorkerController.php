@@ -62,10 +62,14 @@ class WorkerController extends Controller
 
         $token = JWTAuth::fromUser($worker);
 
+        $profile = $worker->profile()->first();
+
+
         return response()->json([
             'message' => 'Worker login successful',
             'worker' => $worker,
-            'token' => $token
+            'token' => $token,
+            'profile' => $profile
         ]);
     }
 

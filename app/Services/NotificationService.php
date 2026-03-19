@@ -42,17 +42,15 @@ class NotificationService
         }
 
         $message = CloudMessage::new()
-                ->withData([
-                    "title" => (string) $title,
-                    "body" => (string) $body,
-                    "type" => (string) $data['type'],
-                    "job_id" => (string) $data['job_id'],
-                ]);
+                    ->withData(array_merge([
+                        "title" => (string) $title,
+                        "body" => (string) $body,
+                    ], array_map('strval', $data)));   
 
         try {
             $messaging->sendMulticast($message, $tokens);
 
-            Log::info('FCM batch send successful: ' . count($tokens) . ' messages sent');
+            Log::info('FCM batch send successful: ' . count($tokens) . ' messages sent for type: ' . $data['type']);
         } catch (\Throwable $e) {
             Log::error('FCM batch send failed: ' . $e->getMessage());
         }
