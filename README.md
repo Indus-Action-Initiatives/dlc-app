@@ -47,7 +47,7 @@ psql -U postgres -d postgres
 Run the following SQL commands:
 ```sql
 CREATE DATABASE labourchowk;
-CREATE USER postgres WITH PASSWORD 'postgres';
+CREATE USER postgres WITH PASSWORD '[DB_PASSWORD]';
 GRANT ALL PRIVILEGES ON DATABASE labourchowk TO postgres;
 ALTER DATABASE labourchowk OWNER TO postgres;
 GRANT ALL ON SCHEMA public TO postgres;
@@ -73,8 +73,8 @@ DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=labourchowk
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
+DB_USERNAME=
+DB_PASSWORD=
 
 BROADCAST_DRIVER=log
 CACHE_DRIVER=file
@@ -85,8 +85,8 @@ SESSION_LIFETIME=120
 UPLOAD_PATH_WORKER="upload/worker"
 UPLOAD_PATH_EMPLOYER="upload/employer"
 
-APP_KEY=base64:w2s9a18R0uQ3qYgb+fnDlw4E6TFkpiewfV8rvVr2hi4=
-JWT_SECRET=8IU9YcL1gDLfNG1juGB1mC5zSO292AUkithnYmOLMUMlMwqtbnkkmMWBLpM2mGOD
+APP_KEY=
+JWT_SECRET=
 ```
 
 ## 5. Database Migrations & SQL Imports
@@ -101,11 +101,11 @@ php artisan db:seed
 2. Run these commands:
 ```bash
 # For States
-set PGPASSWORD=postgres
+set PGPASSWORD=
 psql -U postgres -d labourchowk -f states.sql
 
 # For Districts
-set PGPASSWORD=postgres
+set PGPASSWORD=
 psql -U postgres -d labourchowk -f districts.sql
 ```
 
