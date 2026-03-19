@@ -7,6 +7,12 @@ import {
   setDoc,
 } from "firebase/firestore";
 
+import {
+  query,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
+
 import { db } from "@/services/firebase.js";
 
 function normalizeId(id) {
@@ -52,6 +58,7 @@ export async function ensureThread({
 }
 
 export async function sendThreadMessage({ threadId, text, senderId }) {
+  if (!text || !text.trim()) return;
   const threadRef = doc(db, "threads", threadId);
   const messagesRef = collection(threadRef, "messages");
 
@@ -66,8 +73,24 @@ export async function sendThreadMessage({ threadId, text, senderId }) {
     {
       updatedAt: serverTimestamp(),
       lastMessageText: text,
+      lastMessageAt: serverTimestamp()
     },
     { merge: true }
   );
 }
 
+// 🔥 Real-time listener
+export function listenToMessages(threadId, callback) {
+  const messagesRef = collection(db, "threads", threadId, "messages");
+
+  const q = query(messagesRef, orderBy("createdAt", "asc"));
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    callback(messages);
+  });
+}

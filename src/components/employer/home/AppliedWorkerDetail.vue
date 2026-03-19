@@ -207,8 +207,19 @@ export default {
             window.location.href = `tel:${phone}`;
         },
         chat() {
-            //
-            alert('Upcoming..')
+            const workerId = this.worker.id;                
+            const workerName = this.worker.name;
+
+            if (!workerId || !workerName) {
+                alert("Worker details not available for chat.");
+                return;
+            }
+
+            this.$router.push({
+                name: "worker-chat",
+                params: { id: workerId },
+                query: workerName ? { name: workerName } : {},
+            });
         },
         getInitials(name) {
             if (!name) return '';
@@ -221,9 +232,9 @@ export default {
             const id = this.$route.params.id;
             try {
                 const res = await api.get(apiRoutes.employerWorkerGetWorkerByID + id);
-                console.log("Success worker:", res.data);
                 const data = res.data.worker;
                 this.worker = {
+                    id: data.id,
                     name: data.profile?.name || "", // You may need to add 'name' field in API if missing
                     email: data.email || "",
                     photo: data.profile?.profile_image_url,

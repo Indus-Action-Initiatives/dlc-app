@@ -59,9 +59,14 @@ function handleSend() {
 }
 
 // Automatically scroll to bottom when messages change
-watch(() => props.chat.messages.length, () => {
-    nextTick(() => scrollToBottom())
-})
+watch(
+  () => props.chat.messages,
+  async () => {
+    await nextTick();
+    scrollToBottom();
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
