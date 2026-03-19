@@ -54,6 +54,7 @@ import { useRoute } from 'vue-router';
 import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/services/firebase.js";
 import { ensureThread, makeThreadId, sendThreadMessage } from "@/services/chatService.js";
+import { listenToMessages } from "@/services/chatService";
 
 const route = useRoute();
 
@@ -78,10 +79,10 @@ function getCurrentUser() {
         const raw = localStorage.getItem('labour_currentUser');
         const userData = raw ? JSON.parse(raw) : null;
         const worker = userData?.worker;
+        const profile = userData?.profile;
         const employer = userData?.employer;
-
-        if (worker?.id) return { id: worker.id, type: 'worker', name: worker?.name || 'Worker' };
-        if (employer?.id) return { id: employer.id, type: 'employer', name: employer?.name || 'Employer' };
+        if (worker?.id) return { id: worker.id, type: 'worker', name: profile?.name || 'Worker' };
+        if (employer?.id) return { id: employer.id, type: 'employer', name: profile?.name || 'Employer' };
     } catch (e) {
         // ignore
     }
@@ -115,24 +116,29 @@ function closeChatOnMobile() {
 async function sendMessage(message) {
     if (!activeChat.value || !activeThreadId.value) return;
 
-    // optimistic UI
-    activeChat.value.messages.push({
-        id: `local_${Date.now()}`,
-        text: message,
-        senderId: currentUserKey.value,
-        timestamp: new Date().toISOString(),
-        pending: true,
-    });
-    activeChat.value.lastMessage = message;
-
     try {
         await sendThreadMessage({
             threadId: activeThreadId.value,
             text: message,
             senderId: currentUserKey.value,
         });
+
+        // 🔥 Trigger push
+        const receiverId = activeChat.value.id;
+
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-chat-push-notification`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                receiverId: receiverId,
+                text: message,
+                threadId: activeThreadId.value,
+            }),
+        });  
     } catch (err) {
-        alert("Error !!\nFailed to send message.");
+        console.error("Error sending push notification:", err);
     }
 }
 
@@ -172,9 +178,18 @@ watch(
 
         if (!otherUserId) return;
 
-        const otherUserKey = currentUser.value.type === "worker"
-            ? `employer:${otherUserId}`
-            : `worker:${otherUserId}`;
+        let otherUserKey = String(otherUserId);
+
+        // 🔥 Normalize: only add prefix if missing
+        if (!otherUserKey.includes(":")) {
+            otherUserKey = currentUser.value.type === "worker"
+                ? `employer:${otherUserKey}`
+                : `worker:${otherUserKey}`;
+        }
+        if (otherUserKey === currentUserKey.value) {
+            console.warn("⚠️ Same user chat prevented");
+            return;
+        }
 
         const threadId = makeThreadId(
             currentUserKey.value, 
@@ -194,17 +209,17 @@ watch(
         const threadRef = doc(db, "threads", threadId);
         const msgsQ = query(collection(threadRef, "messages"), orderBy("createdAt", "asc"));
 
-        unsubscribeMessages = onSnapshot(msgsQ, (snap) => {
-            const msgs = snap.docs.map(d => {
-                const data = d.data();
-                return {
-                    id: d.id,
-                    text: data.text || "",
-                    senderId: data.senderId,
-                    timestamp: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-                };
-            });
-            if (activeChat.value) activeChat.value.messages = msgs;
+        unsubscribeMessages = listenToMessages(threadId, (msgs) => {
+            const formatted = msgs.map(m => ({
+                id: m.id,
+                text: m.text || "",
+                senderId: m.senderId,
+                timestamp: m.createdAt?.toDate
+                    ? m.createdAt.toDate().toISOString()
+                    : new Date().toISOString(),
+            }));
+
+            if (activeChat.value) activeChat.value.messages = formatted;
         });
     },
     { immediate: true }

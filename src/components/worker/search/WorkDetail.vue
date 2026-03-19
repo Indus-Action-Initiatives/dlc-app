@@ -138,7 +138,7 @@ export default {
             const employerId = this.job?.employer?.profile?.id;                
             const employerName = this.job?.employer?.profile?.name;
 
-            if (!employerId || employerName) {
+            if (!employerId || !employerName) {
                 alert("Employer details not available for chat.");
                 return;
             }

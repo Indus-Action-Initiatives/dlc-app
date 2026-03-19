@@ -16,7 +16,7 @@ const messaging = firebase.messaging();
 
 // 🔹 Handle click
 self.addEventListener("notificationclick", (event) => {
-
+  console.log("🔥 CLICK WORKS");
   event.notification.close();
 
   const data = event.notification.data || {};
@@ -53,7 +53,7 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-
+ console.log("🔥 PUSH WORKS");
   let payload = {};
 
   try {
@@ -62,21 +62,32 @@ self.addEventListener("push", (event) => {
     console.log("Invalid JSON");
   }
 
-
   const data = payload.data || {};
   const notification = payload.notification || {};
 
-  const title = notification.title || data.title || "Notification";
-
-  const options = {
-    body: notification.body || data.body || "",
-    icon: "/icon.png",
-    data: {
-      ...data,
-    },
-  };
+  const threadId = data.thread_id;
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+
+      // 🔥 Check if user already on same chat
+      for (const client of clientsArr) {
+        if (client.url.includes(`/chat/${threadId}`)) {
+          console.log("🔥 Already in chat → skip notification");
+          return;
+        }
+      }
+
+      // ✅ Show notification
+      const title = notification.title || data.title || "Notification";
+
+      return self.registration.showNotification(title, {
+        body: notification.body || data.body || "",
+        icon: "/icon.png",
+        data: {
+          ...data,
+        },
+      });
+    })
   );
 });
