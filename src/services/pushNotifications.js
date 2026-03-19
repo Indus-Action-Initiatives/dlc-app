@@ -1,10 +1,60 @@
-import { messaging } from "./firebase";
-import { getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken, deleteToken } from "firebase/messaging";
+import app from "./firebase";
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-// 🔹 Generate or fetch device ID
+// 🔥 Main function
+export async function generateFCMToken() {
+  try {
+    // 1. Ask permission
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      console.log("❌ Permission denied");
+      return null;
+    }
+
+    // 2. Register YOUR service worker
+    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+
+    // 3. Ensure it controls the page
+    await navigator.serviceWorker.ready;
+
+    // 4. Initialize messaging ONLY now
+    const messaging = getMessaging(app);
+
+    // 5. Generate new token linked to YOUR SW
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    return token;
+  } catch (err) {
+    console.error("❌ Token error:", err);
+    return null;
+  }
+}
+
+
+export async function saveFCMToken(token, userType, userId) {
+    if (token) {
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/save-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        deviceId: getDeviceId(), // same function you already had
+        fcmToken: token,
+        userType: userType,
+        currentUser: String(userId),
+      }),
+    });
+    return true;
+    }
+    return false;
+}
+
 function getDeviceId() {
   let id = localStorage.getItem("dlc_device_id");
 
@@ -14,84 +64,4 @@ function getDeviceId() {
   }
 
   return id;
-}
-
-// 🔹 Register Service Worker
-async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return null;
-
-  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-
-  return registration;
-}
-
-// 🔹 Register Push (main entry)
-export async function registerPush(userType, userId) {
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return false;
-
-    if (!messaging) return false;
-
-    await registerServiceWorker();
-
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-    });
-
-    if (!token) return false;
-
-    const deviceId = getDeviceId();
-
-    const response = await fetch(`${API_BASE}/save-token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        deviceId,
-        fcmToken: token,
-        userType,
-        currentUser: userId,
-      }),
-    });
-
-    return response.ok;
-  } catch (err) {
-    console.error("❌ Push registration error:", err);
-    return false;
-  }
-}
-
-// 🔹 Foreground listener
-export function listenForPush() {
-  if (!messaging) {
-    console.error("Messaging not initialized");
-    return;
-  }
-
-  onMessage(messaging, async (payload) => {
-
-    const title = payload.notification?.title || "Notification";
-
-    const options = {
-      body: payload.notification?.body || "",
-      icon: "/icon.png",
-      data: payload.data || {},
-    };
-
-    // 👉 If app is visible → better UX: show system notification OR toast
-    if (document.visibilityState === "visible") {
-      try {
-        new Notification(title, options);
-        return;
-      } catch (e) {
-        console.warn("Direct notification failed, fallback to SW");
-      }
-    }
-
-    // 👉 Fallback to service worker
-    const registration = await navigator.serviceWorker.ready;
-    registration.showNotification(title, options);
-  });
 }

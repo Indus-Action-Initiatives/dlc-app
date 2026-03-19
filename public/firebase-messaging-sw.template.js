@@ -1,15 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js");
 
-// 🔹 Force SW activation immediately (good for dev)
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
+console.log("🔥 SW LOADED");
 firebase.initializeApp({
     apiKey: "__API_KEY__",
     authDomain: "__AUTH_DOMAIN__",
@@ -21,42 +13,70 @@ firebase.initializeApp({
 // 🔹 Messaging instance
 const messaging = firebase.messaging();
 
-// 🔹 Background notifications
-messaging.onBackgroundMessage((payload) => {
-
-  const title = payload.notification?.title || "Notification";
-
-  const options = {
-    body: payload.notification?.body || "",
-    icon: "/icon.png",
-    data: payload.data || {},
-  };
-
-  self.registration.showNotification(title, options);
-});
 
 // 🔹 Handle click
 self.addEventListener("notificationclick", (event) => {
+
   event.notification.close();
 
   const data = event.notification.data || {};
+
   let url = "/";
 
   if (data.type === "job") {
-    url = `/jobs/${data.job_id}`;
+    url = `/worker-dashboard-employer-detail/${data.job_id}`;
   } else if (data.type === "chat") {
-    url = `/chat/${data.chat_id}`;
+    url = `/chat/${data.thread_id}`;
   }
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+    clients.matchAll({ type: "window", includeUncontrolled: false }).then((clientsArr) => {
       for (const client of clientsArr) {
-        if ("focus" in client) {
-          client.navigate(url);
-          return client.focus();
+        // 🔥 Only interact with SAME ORIGIN + controlled clients
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          try {
+            client.postMessage({
+              type: "NAVIGATE",
+              url,
+            });
+            return client.focus();
+          } catch (e) {
+            console.log("⚠️ postMessage failed, fallback to openWindow");
+          }
         }
       }
+
+      // fallback
       return clients.openWindow(url);
     })
+  );
+});
+
+self.addEventListener("push", (event) => {
+
+  let payload = {};
+
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (e) {
+    console.log("Invalid JSON");
+  }
+
+
+  const data = payload.data || {};
+  const notification = payload.notification || {};
+
+  const title = notification.title || data.title || "Notification";
+
+  const options = {
+    body: notification.body || data.body || "",
+    icon: "/icon.png",
+    data: {
+      ...data,
+    },
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
   );
 });

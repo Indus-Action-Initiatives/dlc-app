@@ -94,7 +94,8 @@ import { required, minLength, helpers, numeric } from '@vuelidate/validators'
 import api from "@/services/api.js"
 import apiRoutes from "@/services/apiRoutes.js"
 import { otpService } from "@/services/otpService.js"
-import { registerPush } from "@/services/pushNotifications.js"
+import { generateFCMToken } from "@/services/pushNotifications.js"
+import { saveFCMToken } from "@/services/pushNotifications.js"
 
 const router = useRouter()
 
@@ -190,8 +191,9 @@ const verifyOtpAndLogin = async () => {
         })
         localStorage.setItem('labour_currentUser', JSON.stringify(res.data))
         localStorage.setItem('labouchowk_userType', 'worker')
-        await registerPush('worker', String(res.data.worker.id))
         alert("Login successful!")
+        const token = await generateFCMToken()
+        await saveFCMToken(token, 'worker', res.data.worker.id);
         router.push('/worker-dashboard-home')
     } catch (err) {
         console.error("Error in login:", err)
