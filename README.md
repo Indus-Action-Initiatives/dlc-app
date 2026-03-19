@@ -63,7 +63,7 @@ APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost
 
-VITE_MAP_SECRET_KEY=323636d60cb7037d21b710ee3d1716d8
+VITE_MAP_SECRET_KEY=
 VITE_API_BASE_URL=http://localhost:8000/api/
 
 LOG_CHANNEL=stack
