@@ -42,8 +42,12 @@ class NotificationService
         }
 
         $message = CloudMessage::new()
-                    ->withNotification(FcmNotification::create($title, $body))
-                        ->withData($data);
+                ->withData([
+                    "title" => (string) $title,
+                    "body" => (string) $body,
+                    "type" => (string) $data['type'],
+                    "job_id" => (string) $data['job_id'],
+                ]);
 
         try {
             $messaging->sendMulticast($message, $tokens);
