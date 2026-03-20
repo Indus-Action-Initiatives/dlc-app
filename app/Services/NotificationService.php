@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\UserDevice;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FcmNotification;
+use Kreait\Firebase\Messaging\Notification;
 
 class NotificationService
 {
@@ -42,10 +42,11 @@ class NotificationService
         }
 
         $message = CloudMessage::new()
-                    ->withData(array_merge([
-                        "title" => (string) $title,
-                        "body" => (string) $body,
-                    ], array_map('strval', $data)));   
+                    ->withNotification(Notification::create(
+                        (string) $title,
+                        (string) $body
+                    ))
+                    ->withData(array_map('strval', $data));  
 
         try {
             $messaging->sendMulticast($message, $tokens);
