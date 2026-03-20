@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\UserDevice;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification as FcmNotification;
+use Kreait\Firebase\Messaging\Notification;
 
 class NotificationService
 {
@@ -40,15 +40,14 @@ class NotificationService
             Log::error('FCM not configured: ' . $e->getMessage());
             return;
         }
-
         $message = CloudMessage::new()
-                    ->withData(array_merge([
-                        "title" => (string) $title,
-                        "body" => (string) $body,
-                    ], array_map('strval', $data)));   
-
-        try {
-            $messaging->sendMulticast($message, $tokens);
+                    ->withNotification(Notification::create(
+                        (string) $title,
+                        (string) $body
+                    ))
+                    ->withData(array_map('strval', $data)); 
+        try{
+	$messaging->sendMulticast($message, $tokens);
 
             Log::info('FCM batch send successful: ' . count($tokens) . ' messages sent for type: ' . $data['type']);
         } catch (\Throwable $e) {

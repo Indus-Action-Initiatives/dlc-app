@@ -52,9 +52,10 @@ class NotificationController extends Controller
     public function sendPushNotificationForChat(Request $request)
     {
         $request->validate([
-            'text' => 'required|string',
+	    'text' => 'required|string',
             'receiverId' => 'required|string',
-            'threadId' => 'nullable|string',
+	    'senderId' => 'nullable|string',
+	    'senderName'=>'nullable|string',
         ]);
 
         app(NotificationService::class)->send(
@@ -63,8 +64,11 @@ class NotificationController extends Controller
             (string) $request->text,
             [
                 "type" => "chat",
-                "thread_id" => (string) $request->threadId,
-            ]
+	    	"receiverId" => (string) $request->receiverId,
+		"senderId" => (string) $request->senderId,
+		"senderName"=>(string) $request->senderName,
+	    
+	    ]
         );
         return response()->json(['success' => true, 'message' => 'Push notification sent successfully']);
     }

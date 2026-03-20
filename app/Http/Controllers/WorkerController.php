@@ -143,9 +143,11 @@ class WorkerController extends Controller
             }
 
             // ✅ Upload directories from .env
-            $uploadPath = env('UPLOAD_PATH_WORKER');
-            $imagePath= $uploadPath . '/profile';
-            $docPath = $uploadPath . '/docs';
+
+	     $uploadPath = config('filesystems.paths.worker_upload');
+            //image
+            $imagePath= public_path($uploadPath. '/profile');
+            $docPath = public_path($uploadPath . '/docs');
 
             if (!is_dir($imagePath)) {
                     mkdir($imagePath, 0777, true);
