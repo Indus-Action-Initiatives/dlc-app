@@ -134,7 +134,8 @@ async function sendMessage(message) {
             body: JSON.stringify({
                 receiverId: receiverId,
                 text: message,
-                threadId: activeThreadId.value,
+                senderId: currentUserKey.value,
+                senderName: currentUser.value.name,
             }),
         });  
     } catch (err) {
