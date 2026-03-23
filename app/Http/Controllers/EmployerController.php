@@ -187,11 +187,10 @@ class EmployerController extends Controller
                 ]));
 
             // ✅ Upload directories from .env
-            $uploadPath = env('UPLOAD_PATH_EMPLOYER');
-            //$uploadPath = config('filesystems.paths.worker_upload');
-            //image
-            $imagePath= $uploadPath . '/profile';
-            $docPath = $uploadPath . '/docs';
+            //$uploadPath = env('UPLOAD_PATH_EMPLOYER');
+            $uploadPath = config('filesystems.paths.employer_upload');
+            $imagePath= public_path($uploadPath. '/profile');
+            $docPath = public_path($uploadPath . '/docs');
            // Log::info('Upload Path: ' . $uploadPath);
            // Log::info('Doc Path: ' . $docPath);
 

@@ -58,10 +58,10 @@ return [
 
     ],
 
-    // 'paths' => [
-    //          'worker_upload' => 'C:/wamp64/www/labourchowk/upload/worker',
-    //          'employer_upload' => 'C:/wamp64/www/labourchowk/upload/employer',
-    //     ],
+    'paths' => [
+          'worker_upload' => 'C:/wamp64/www/labourchowk/upload/worker',
+          'employer_upload' => 'C:/wamp64/www/labourchowk/upload/employer',
+     ],
 
 
     /*
