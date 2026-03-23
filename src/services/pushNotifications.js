@@ -1,11 +1,92 @@
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 import app from "./firebase";
-
+import { PushNotifications } from "@capacitor/push-notifications";
+import { Capacitor } from "@capacitor/core";
+import router from "@/router";
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 // 🔥 Main function
 export async function generateFCMToken() {
   try {
+    
+    // ✅ STEP 1A: If MOBILE (APK)
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const permission = await PushNotifications.requestPermissions();
+        let mobile_token;
+        if (permission.receive !== 'granted') {
+          console.log('❌ Mobile permission denied');
+          return null;
+        }
+  
+        await PushNotifications.register();
+  
+        // ✅ TOKEN LISTENER
+        PushNotifications.addListener('registration', async (token) => {
+          mobile_token = token.value;
+          console.log('📱 MOBILE TOKEN:', token.value);
+        });
+  
+        // ✅ ERROR LISTENER
+        PushNotifications.addListener('registrationError', (err) => {
+          console.error('❌ Registration error:', err);
+        });
+  
+        // ✅ FOREGROUND NOTIFICATION
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('📩 Foreground notification:', notification);
+        
+          const data = notification.data || {};
+        
+          if (confirm(notification.title + "\n" + notification.body)) {
+            if (data.type === 'chat') {
+              router.push({
+                name: 'worker-chat',
+                params: { id: data.senderId },
+                query: { name: data.senderName }
+              });
+            }
+            if (data.type === 'job') {
+              router.push({
+                name: 'worker-dashboard-employer-detail',
+                params: { id: data.job_id }
+              });
+            }
+          }
+        });
+  
+        // ✅ CLICK HANDLER (MOST IMPORTANT)
+
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          const data = action.notification.data || {};
+        
+          console.log('👉 Notification clicked:', data);
+        
+          setTimeout(() => {
+            if (data.type === 'chat') {
+              router.push({
+                name: 'worker-chat',
+                params: { id: data.senderId },
+                query: { name: data.senderName }
+              });
+              return;
+            }
+        
+            if (data.type === 'job') {
+              router.push({
+                name: 'worker-dashboard-employer-detail',
+                params: { id: data.job_id }
+              });
+              return;
+            }
+          }, 300);
+        });
+        return mobile_token;
+      } catch (err) {
+        console.error('❌ Mobile token error:', err);
+        return null;
+      }
+    }
     // 1. Ask permission
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {

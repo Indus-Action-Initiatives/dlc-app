@@ -234,7 +234,7 @@ export default {
                 const res = await api.get(apiRoutes.employerWorkerGetWorkerByID + id);
                 const data = res.data.worker;
                 this.worker = {
-                    id: data.id,
+                    id: id,
                     name: data.profile?.name || "", // You may need to add 'name' field in API if missing
                     email: data.email || "",
                     photo: data.profile?.profile_image_url,

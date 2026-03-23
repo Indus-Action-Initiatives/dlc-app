@@ -44,7 +44,7 @@ export default {
                 { title: "Basic Details", icon: "mdi-account", route: "/employer-dashboard-profile-basic" },
                 { title: "Identity & Verification", icon: "mdi-id-card", route: "/employer-dashboard-profile-identity" },
                 { title: "Location Information", icon: "mdi-map-marker", route: "/employer-dashboard-profile-location" },
-                { title: "Work Details", icon: "mdi-briefcase", route: "employer-dashboard-profile-work" },
+                { title: "Work Details", icon: "mdi-briefcase", route: "/employer-dashboard-profile-work" },
                 { title: "Change Password", icon: "mdi-lock-reset", route: "/employer-dashboard-profile-password" },
                 { title: "Help", icon: "mdi-help-circle", route: "/employer-dashboard-profile-help" },
 
